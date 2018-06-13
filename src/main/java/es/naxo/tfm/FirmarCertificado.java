@@ -1,6 +1,9 @@
 package es.naxo.tfm;
 
+import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.security.PrivateKey;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
@@ -26,6 +29,7 @@ import org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequest;
 import es.naxo.tfm.utils.Cifrado;
 import es.naxo.tfm.utils.Constantes;
 import es.naxo.tfm.utils.CryptoUtils;
+import es.naxo.tfm.utils.Trazas;
 
 public class FirmarCertificado {
 	
@@ -179,5 +183,76 @@ public class FirmarCertificado {
 	    
 	    // Si he llegado hasta aquí, es que todo fue bien.
 	    return true;
+	}
+	
+	/*
+	 * Una vez que está el certificado firmado, le concatena después la clave publica de nuestra CA, para que después funcione 
+	 * el autoregistro y activación de certificados en AWS. 
+	 * Además prepara ya la cadena completa en Base64 para devolverlo como respuesta HTTPS.
+	 * Recibe el certificado ya firmado. 
+	 * Devuelve el certificado en Base64, y con la clave publica de la CA en base64 también concatenada. 
+	 */
+	public static String agregarCAYPrepararBase64 (String certificadoFirmado)    {
+		
+	    // Cargo el contenido de la clave publica de la CA, que lo concatenaré junto con el certificado firmado.
+		String clavePublicaCAEnTexto = null;
+		FileInputStream fileInput = null;
+		ByteArrayOutputStream baos = null;
+	    
+	    try		{
+			
+			fileInput = new FileInputStream(Constantes.certificateCAFile);
+			
+			byte [] array = new byte[10000];
+			int leidos = fileInput.read(array);
+
+			if (leidos >=10000 || leidos <= 0)    {
+				Trazas.getLogger().error("Error al leer el fichero de la CA. Leidos: " + leidos);
+		    	fileInput.close();	
+				return null; 
+			}
+
+			clavePublicaCAEnTexto = new String (array, 0, leidos, StandardCharsets.UTF_8);
+	    	fileInput.close();	
+		}
+
+	    catch (Exception ex)		{
+	    	Trazas.getLogger().error("Excepcion al cargar la clave publica de la CA de su fichero", ex);
+			return null; 
+		}
+		
+	    // Ahora grabamos en el fichero tanto el certificado firmado que nos han devuelto, como la clave publica de la CA, para que luego sea compatible con 
+	    // el autoregistro de certificados en AWS. 
+	    try    {
+
+	    	byte[] cert = certificadoFirmado.getBytes();
+	    	baos = new ByteArrayOutputStream();
+
+	    	baos.write("-----BEGIN CERTIFICATE-----\n".getBytes("UTF-8"));
+
+	    	int lineas = cert.length / 64;
+		    for (int i = 0; i < lineas; i++)    {
+			    baos.write(cert, i*64, 64);
+	    		baos.write ("\n".getBytes());
+		    }
+
+	    	if (cert.length % 64 > 0)    {
+	    		baos.write(cert, lineas*64, cert.length % 64);
+	    	}
+		    
+		    baos.write("\n-----END CERTIFICATE-----\n".getBytes("UTF-8"));
+		    
+		    // Después le concateno la clave publica de la CA, ya que será necesaria para que en AWS podamos autoregistrar el certificado. 
+		    baos.write(clavePublicaCAEnTexto.getBytes());
+		    
+		    baos.close();
+	    }
+		catch (Exception e)		{
+			System.err.println("Excepcion al grabar el certificado firmado en el fichero de salida");
+		    e.printStackTrace();
+		    return null;
+		}
+	    
+	    return baos.toString(); 
 	}
 }

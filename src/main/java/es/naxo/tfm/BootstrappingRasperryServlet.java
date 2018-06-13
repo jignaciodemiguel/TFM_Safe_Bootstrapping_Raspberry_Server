@@ -62,6 +62,8 @@ public class BootstrappingRasperryServlet extends HttpServlet {
 	    String resultado = null; 
 	    
 	    try    {
+	    	
+	    	// Firmamos el CSR.
 	    	resultado = FirmarCertificado.firmarCertificadoConCA(csr, identificadorUnico);
 	    	
 	    	if (resultado == null || "".equals(resultado))    {
@@ -71,6 +73,15 @@ public class BootstrappingRasperryServlet extends HttpServlet {
 	    	}
 
 			Trazas.getLogger().info ("Firma de certificado realizada con éxito. Identificador: " + identificadorUnico);
+
+			// Lo convertimos a Base64 (formato para grabar en fichero) y le agregamos la clave publica de la CA. 
+			String certificadoMasCA = FirmarCertificado.agregarCAYPrepararBase64 (resultado);
+
+			if (certificadoMasCA == null)    {
+		    	sout.print("KO_Error_Firma");
+				return; 
+			}
+
 
 	    	// Todo ha ido bien, procedemos a crear el Thing en AWS. 
 			boolean resultado2 = CrearThingAWS.crearDevice(FirmarCertificado.obtenerIdDevice(identificadorUnico));
@@ -83,7 +94,7 @@ public class BootstrappingRasperryServlet extends HttpServlet {
 			Trazas.getLogger().info ("Thing creado en AWS con éxito. Identificador: " + identificadorUnico);
 
 	    	// Todo ha ido bien, devolvemos el certificado firmado;
-	    	sout.print(resultado);
+	    	sout.print(certificadoMasCA);
 	    	return;
 	    }
 	    catch (Exception ex)    {
