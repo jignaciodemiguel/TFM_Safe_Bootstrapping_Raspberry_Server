@@ -120,7 +120,8 @@ public class FirmarCertificado {
 	    	
             JcaPKCS10CertificationRequest jcaRequest = new JcaPKCS10CertificationRequest(request);
             
-            X509v3CertificateBuilder certificateBuilder = new JcaX509v3CertificateBuilder(cacert, serial, issuedDate, expiryDate, jcaRequest.getSubject(), jcaRequest.getPublicKey());
+            X509v3CertificateBuilder certificateBuilder = new JcaX509v3CertificateBuilder(cacert, serial, issuedDate, 
+            		expiryDate, jcaRequest.getSubject(), jcaRequest.getPublicKey());
             
             JcaX509ExtensionUtils extUtils = new JcaX509ExtensionUtils();
             certificateBuilder.addExtension(Extension.authorityKeyIdentifier, false,
@@ -148,7 +149,7 @@ public class FirmarCertificado {
 	    }
 
 	    catch (Exception e)		{
-			System.err.println("Excepcion al grabar el certificado firmado en el fichero de salida");
+			System.err.println("Excepcion al generar el base64 del certificado firmado");
 		    e.printStackTrace();
 		    return null; 
 		}
@@ -156,10 +157,9 @@ public class FirmarCertificado {
 	    return certificadoFirmadoString;
 	}
 	
-	/* Ejecuto la validación sintactica de un campo SerialNumber de Rasperry. 
+	/* Ejecuto la validación sintactica de un campo SerialNumber de Raspberry. 
 	 *  - Tiene que existir. 
-	 *  - Tener 16 caracteres exactos de tamaño.
-	 *  - Cumplir la expresion regular (numeros)
+	 *  - Tener 16 caracteres exactos de tamaño, de tipo Hexadecimal.
 	 */
 	public static boolean validarSerialNumber (String serialNumber)    {
 		
@@ -173,7 +173,7 @@ public class FirmarCertificado {
 			return false;	
 		}
 	    
-		Pattern patron = Pattern.compile("^[A-Za-z\\d]{16}$");
+		Pattern patron = Pattern.compile("^[A-Fa-f\\d]{16}$");
 	    Matcher busqueda = patron.matcher(serialNumber);
 		
 	    if (busqueda.matches() == false)   {

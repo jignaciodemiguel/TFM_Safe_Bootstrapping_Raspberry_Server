@@ -41,6 +41,7 @@ public class CrearThingAWS {
 			CreateThingResult cresult = client.createThing(ct);
 			
 			String id = cresult.getThingId();
+			
 			if (id == null || "".equals(id))    {
 				Trazas.getLogger().error ("Error al crear el Thing en AWS: " + idDevice + ". El Id llega vacio");
 				return false; 

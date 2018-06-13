@@ -13,21 +13,22 @@ import javax.servlet.http.HttpServletResponse;
 import es.naxo.tfm.aws.CrearThingAWS;
 import es.naxo.tfm.utils.Trazas;
 
-public class BootstrappingRasperryServlet extends HttpServlet {
+public class BootstrappingRaspberryServlet extends HttpServlet {
 
 	private static final long serialVersionUID = 1L;
        
     /**
      * @see MiDispatcherServlet#PadreServlet()
      */
-    public BootstrappingRasperryServlet() {
+    public BootstrappingRaspberryServlet() {
         super();
     }
 
     /**
 	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
 	 */
-	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+	protected void doPost(HttpServletRequest request, HttpServletResponse response) 
+		throws ServletException, IOException {
 
 		Trazas.inicializar();
 		ServletOutputStream sout = response.getOutputStream();

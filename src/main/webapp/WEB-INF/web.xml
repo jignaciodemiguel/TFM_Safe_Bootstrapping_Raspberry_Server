@@ -2,11 +2,11 @@
 <web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://java.sun.com/xml/ns/javaee" xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd" id="WebApp_ID" version="3.0">
 	<display-name>UCAM_TFM_Ciberseguridad_Server</display-name>
 	<servlet>
-		<servlet-name>BootstrappingRasperryServlet</servlet-name>
-		<servlet-class>es.naxo.tfm.BootstrappingRasperryServlet</servlet-class>
+		<servlet-name>BootstrappingRaspberryServlet</servlet-name>
+		<servlet-class>es.naxo.tfm.BootstrappingRaspberryServlet</servlet-class>
 	</servlet>
 	<servlet-mapping>
-		<servlet-name>BootstrappingRasperryServlet</servlet-name>
-		<url-pattern>/BootstrappingRasperryServlet</url-pattern>
+		<servlet-name>BootstrappingRaspberryServlet</servlet-name>
+		<url-pattern>/BootstrappingRaspberryServlet</url-pattern>
 	</servlet-mapping>
 </web-app>
