@@ -11,5 +11,9 @@ public class Constantes {
 	public static final String certificateCAFile = rutaKeyStore + "rootCA_TFM_Ciberseguridad.pem";
 	public static final String privateKeyCAFile = rutaKeyStore + "rootCA_TFM_Ciberseguridad.key"; 
 	
+	public static final String listaSerialNumberValidos = rutaKeyStore + "listaSerialNumberValidos";
+	public static final String listaSerialNumberUsados = rutaKeyStore + "listaSerialNumberUsados";
+
+	
 	public static final String privateKeyCertificadoDevice = null; 
 }

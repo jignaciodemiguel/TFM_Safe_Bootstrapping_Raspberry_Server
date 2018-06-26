@@ -11,6 +11,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import es.naxo.tfm.aws.CrearThingAWS;
+import es.naxo.tfm.utils.Constantes;
 import es.naxo.tfm.utils.Trazas;
 
 public class BootstrappingRaspberryServlet extends HttpServlet {
@@ -33,6 +34,7 @@ public class BootstrappingRaspberryServlet extends HttpServlet {
 		Trazas.inicializar();
 		ServletOutputStream sout = response.getOutputStream();
         response.setContentType("text/plain;charset=UTF-8");
+        String certificado = null;
 
 		// Obtengo los parametros que me llegan. 
 		String csr = (String) request.getParameter("csr");
@@ -44,63 +46,95 @@ public class BootstrappingRaspberryServlet extends HttpServlet {
 		Pattern patron = Pattern.compile("[a-zA-Z0-9/\\-\\+\\=\\s\\t]{1,10000}");
 	    
 		// Validamos el CSR. 
+		if (csr == null || csr.equals(""))   {
+			Trazas.getLogger().warn("Error en la validación del CSR. Está vacio: " + csr);
+	        response.sendError(400, "Error en la validación de parametros");
+	        return; 
+		}
+
 		Matcher busqueda = patron.matcher(csr);
-		if (csr == null || csr.equals("") || busqueda.matches() == false)   {
-			Trazas.getLogger().warn("Error en la validación de usuario. Está vacio o no coincide la expresion regular: " + csr);
-	        sout.print("KO_Error_CSR");
+		if (busqueda.matches() == false)   {
+			Trazas.getLogger().warn("Error en la validación del CSR. No coincide la expresion regular: " + csr);
+	        response.sendError(400, "Error en la validación de parametros");
 	        return; 
 		}
 
 		// Validamos el identificadorUnico. 
-	    busqueda = patron.matcher(identificadorUnico);
-
-	    if (identificadorUnico == null || identificadorUnico.equals("") || busqueda.matches() == false)   {
-			Trazas.getLogger().warn("Error en la validación de identificadorUnico. Está vacio o no coincide la expresion regular: " + identificadorUnico);
-	        sout.print("KO_Error_IdentificadorUnico");
+	    if (identificadorUnico == null || identificadorUnico.equals(""))   {
+			Trazas.getLogger().warn("Error en la validación de identificadorUnico. Está vacio: " + identificadorUnico);
+	        response.sendError(400, "Error en la validación de parametros");
 	        return; 
 		}
 
-	    String resultado = null; 
+	    busqueda = patron.matcher(identificadorUnico);
+	    if (busqueda.matches() == false)   {
+			Trazas.getLogger().warn("Error en la validación de identificadorUnico. No coincide la expresion regular: " + identificadorUnico);
+	        response.sendError(400, "Error en la validación de parametros");
+	        return; 
+		}
+
+	    // Obtengo el SerialNumber a partir del identificadorUnico. 
+	    String serialNumber = IdentificarDispositivo.obtenerSerialNumber(identificadorUnico); 
+	    
+	    // Valido si el Serial Number es correcto a nivel de formato, y también si está en la lista de Serial Numbers
+	    // válidos y además que no se haya utilizado anteriormente por ningún dispositivo. 
+	    int validacion = IdentificarDispositivo.validarSerialNumber(serialNumber);
+
+	    // Si validación <> 0, es que falló la validación y devolvemos el error al cliente. 
+	    if (validacion == -1)   {
+	        response.sendError(400, "Error en la validación de parametros");
+	    	return; 
+	    }
+	    else if (validacion == -2)    {
+	    	response.sendError(403, "Serial Number no permitido");
+	    	return; 
+	    }
+	    else if (validacion == -3)    {
+	    	response.sendError(403, "Serial Number ya registrado anteriormente");
+	    	return; 
+	    }
 	    
 	    try    {
 	    	
 	    	// Firmamos el CSR.
-	    	resultado = FirmarCertificado.firmarCertificadoConCA(csr, identificadorUnico);
+	    	certificado = FirmarCertificado.firmarCSR(csr);
 	    	
-	    	if (resultado == null || "".equals(resultado))    {
-		    	Trazas.getLogger().error ("Error, el certificado firmado viene vacio: " + resultado);
-		    	sout.print("KO_Error_Firma");
+	    	if (certificado == null || "".equals(certificado))    {
+		    	Trazas.getLogger().error ("Error, el certificado firmado viene vacio: " + certificado);
+		    	response.sendError(500, "Error interno al firmar el certificado");
 		        return;
 	    	}
 
 			Trazas.getLogger().info ("Firma de certificado realizada con éxito. Identificador: " + identificadorUnico);
 
 			// Lo convertimos a Base64 (formato para grabar en fichero) y le agregamos la clave publica de la CA. 
-			String certificadoMasCA = FirmarCertificado.agregarCAYPrepararBase64 (resultado);
+			String certificadoMasCA = FirmarCertificado.agregarCAYPrepararBase64 (certificado);
 
 			if (certificadoMasCA == null)    {
-		    	sout.print("KO_Error_Firma");
+		    	response.sendError(500, "Error interno al firmar el certificado");
 				return; 
 			}
 
-
 	    	// Todo ha ido bien, procedemos a crear el Thing en AWS. 
-			boolean resultado2 = CrearThingAWS.crearDevice(FirmarCertificado.obtenerIdDevice(identificadorUnico));
+			boolean resultado2 = CrearThingAWS.crearDevice("Rasperry_" + serialNumber);
 			
 			if (resultado2 == false)    {
-		    	sout.print("KO_Error_Crear_Device");
+		    	response.sendError(500, "Error interno al crear el Thing en AWS");
 				return; 
 			}
 
 			Trazas.getLogger().info ("Thing creado en AWS con éxito. Identificador: " + identificadorUnico);
 
-	    	// Todo ha ido bien, devolvemos el certificado firmado;
+	    	// Todo ha ido bien, marcamos el Serial Number como ya utilizado, para que no se permita usarlo más veces. 
+			IdentificarDispositivo.grabarLista(serialNumber, Constantes.listaSerialNumberUsados);
+			
+			// Devolvemos el certificado firmado;
 	    	sout.print(certificadoMasCA);
 	    	return;
 	    }
 	    catch (Exception ex)    {
 	    	Trazas.getLogger().error ("Excepcion en la firma del CSR", ex);
-	    	sout.print("KO_Error_Firma");
+	    	response.sendError(500, "Error interno al firmar el certificado");
 	        return;
 	    }
 	}

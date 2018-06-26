@@ -9,8 +9,6 @@ import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.util.Base64;
 import java.util.Date;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.bouncycastle.asn1.x509.BasicConstraints;
 import org.bouncycastle.asn1.x509.ExtendedKeyUsage;
@@ -26,59 +24,13 @@ import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.bouncycastle.pkcs.PKCS10CertificationRequest;
 import org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequest;
 
-import es.naxo.tfm.utils.Cifrado;
 import es.naxo.tfm.utils.Constantes;
 import es.naxo.tfm.utils.CryptoUtils;
 import es.naxo.tfm.utils.Trazas;
 
 public class FirmarCertificado {
 	
-	// Clave usada compartida para generar el certificado unico. 
-	private static final String claveSecretoCompartido1 = "6849576002387456";
-	private static final String claveSecretoCompartido2 = "9472652849608709";
 
-	public static String obtenerIdDevice (String identificadorUnico) 
-			throws Exception {
-			
-			// Desciframos el identificadorUnico
-			byte[] descifrado = Base64.getDecoder().decode(identificadorUnico);
-			
-			//Lo desciframos desde AES, con la clave secreta también compartida. 
-			String cadena = Cifrado.descifra(descifrado);
-			
-			// Eliminamos los secretos compartidos de inicio y final. Lo que nos queda al final es el Serial Number. 
-			cadena = cadena.replaceAll(claveSecretoCompartido1, "");
-			String serialNumber = cadena.replaceAll(claveSecretoCompartido2, "");
-			
-			if (validarSerialNumber(serialNumber) == false)    {
-				return null; 
-			}
-
-			return "Rasperry_" + serialNumber;
-		}
-
-	public static String firmarCertificadoConCA (String csr, String identificadorUnico)   {
-		
-		// Desciframos el identificadorUnico
-		byte[] descifrado = Base64.getDecoder().decode(identificadorUnico);
-		
-		//Lo desciframos desde AES, con la clave secreta también compartida. 
-		String cadena = Cifrado.descifra(descifrado);
-		
-		// Eliminamos los secretos compartidos de inicio y final. Lo que nos queda al final es el Serial Number. 
-		cadena = cadena.replaceAll(claveSecretoCompartido1, "");
-		String serialNumber = cadena.replaceAll(claveSecretoCompartido2, "");
-		
-		if (validarSerialNumber(serialNumber) == false)    {
-			return null; 
-		}
-
-		String certificado = firmarCSR(csr);
-		
-
-		return certificado;
-	}
-	
 	/**
 	 * A partir de un CSR generado, y de la clave privada de nuestra CA, realiza la firma del certificado. 
 	 * @param csrString El CSR, codificado en base64, para poder transmitirlo por HTTP. 
@@ -157,34 +109,6 @@ public class FirmarCertificado {
 	    return certificadoFirmadoString;
 	}
 	
-	/* Ejecuto la validación sintactica de un campo SerialNumber de Raspberry. 
-	 *  - Tiene que existir. 
-	 *  - Tener 16 caracteres exactos de tamaño, de tipo Hexadecimal.
-	 */
-	public static boolean validarSerialNumber (String serialNumber)    {
-		
-		if (serialNumber == null || serialNumber.equals(""))   {
-			System.err.println ("Error en la validación del SerialNumber. Está vacio: " + serialNumber);
-			return false;
-		}
-
-	    if (serialNumber.length() != 16)   {
-			System.err.println ("Error en la longitud (" + serialNumber.length() + ") del SerialNumber: " + serialNumber);
-			return false;	
-		}
-	    
-		Pattern patron = Pattern.compile("^[A-Fa-f\\d]{16}$");
-	    Matcher busqueda = patron.matcher(serialNumber);
-		
-	    if (busqueda.matches() == false)   {
-			System.err.println("Error en la validación de la expresion regular del SerialNumber: " + serialNumber);
-			return false;	
-		}
-	    
-	    // Si he llegado hasta aquí, es que todo fue bien.
-	    return true;
-	}
-	
 	/*
 	 * Una vez que está el certificado firmado, le concatena después la clave publica de nuestra CA, para que después funcione 
 	 * el autoregistro y activación de certificados en AWS. 
@@ -255,4 +179,5 @@ public class FirmarCertificado {
 	    
 	    return baos.toString(); 
 	}
+	
 }

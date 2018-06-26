@@ -57,7 +57,7 @@ public class Trazas   {
 		props.setProperty("log4j.rootLogger", "INFO, consola, fichero");
 		props.setProperty("log4j.logger.java", "INFO, consola, fichero");
 		props.setProperty("log4j.logger.org", "INFO, consola, fichero");
-		props.setProperty("log4j.logger.es.naxo.look4family", nivelLogActual + ", consola, fichero");
+		props.setProperty("log4j.logger.es.naxo.tfm", nivelLogActual + ", consola, fichero");
 		
 		// Configuración del log CONSOLE
 		props.setProperty("log4j.appender.consola", "org.apache.log4j.ConsoleAppender");
