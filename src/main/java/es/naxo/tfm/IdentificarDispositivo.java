@@ -65,9 +65,8 @@ public class IdentificarDispositivo {
 			return -1;
 		}
 	    
-	    // Cargo la lista de serialNumbers validos, y la de ya usados. 
+	    // Cargo la lista de serialNumbers validos. 
 	    HashMap <String, String> valoresSerialNumberValidos = cargarLista(Constantes.listaSerialNumberValidos);
-	    HashMap <String, String> valoresSerialNumberUsados = cargarLista(Constantes.listaSerialNumberUsados);
 	    
 	    // Valido si el SerialNumber está en la lista de valores correctos. 
 	    if (valoresSerialNumberValidos.containsKey(serialNumber) == false)    {
@@ -75,7 +74,10 @@ public class IdentificarDispositivo {
 	    	return -2;
 		}
 	
-		// Valido si el SerialNumber ya se ha usado previamente algún dispositivo.
+	    // Cargo la lista de serialNumbers ya usados anteriormente. 
+	    HashMap <String, String> valoresSerialNumberUsados = cargarLista(Constantes.listaSerialNumberUsados);
+
+	    // Valido si el SerialNumber ya se ha usado previamente algún dispositivo.
 	    if (valoresSerialNumberUsados.containsKey(serialNumber) == true)    {
 	    	Trazas.getLogger().warn("Error, el SerialNumber ya ha sido utilizado anteriormente: " + serialNumber);
 	    	return -3;

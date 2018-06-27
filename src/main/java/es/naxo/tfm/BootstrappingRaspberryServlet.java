@@ -60,7 +60,9 @@ public class BootstrappingRaspberryServlet extends HttpServlet {
 		}
 
 		// Validamos el identificadorUnico. 
-	    if (identificadorUnico == null || identificadorUnico.equals(""))   {
+		patron = Pattern.compile("[a-zA-Z0-9/\\-\\+\\=\\s\\t]{1,2000}");
+
+		if (identificadorUnico == null || identificadorUnico.equals(""))   {
 			Trazas.getLogger().warn("Error en la validación de identificadorUnico. Está vacio: " + identificadorUnico);
 	        response.sendError(400, "Error en la validación de parametros");
 	        return; 
@@ -125,7 +127,8 @@ public class BootstrappingRaspberryServlet extends HttpServlet {
 
 			Trazas.getLogger().info ("Thing creado en AWS con éxito. Identificador: " + identificadorUnico);
 
-	    	// Todo ha ido bien, marcamos el Serial Number como ya utilizado, para que no se permita usarlo más veces. 
+	    	// Todo ha ido bien, marcamos el Serial Number como ya utilizado, 
+			// para que no se permita usarlo más veces. 
 			IdentificarDispositivo.grabarLista(serialNumber, Constantes.listaSerialNumberUsados);
 			
 			// Devolvemos el certificado firmado;
